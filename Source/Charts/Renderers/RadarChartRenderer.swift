@@ -459,7 +459,7 @@ open class RadarChartRenderer: LineRadarRenderer
         context.restoreGState()
     }
 
-    private func createAccessibleElement(withDescription description: String,
+    open func createAccessibleElement(withDescription description: String,
                                          container: RadarChartView,
                                          dataSet: IRadarChartDataSet,
                                          modifier: (NSUIAccessibilityElement) -> ()) -> NSUIAccessibilityElement {
