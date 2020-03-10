@@ -151,6 +151,9 @@ open class BarChartDataSet: BarLineScatterCandleBubbleChartDataSet, IBarChartDat
     
     /// corners to be rounded
     open var roundedCorners: UIRectCorner = []
+
+    /// array of indexes whos bars to be filled by default
+    open var filledIndexes = [Int]()
     
     // MARK: - NSCopying
     

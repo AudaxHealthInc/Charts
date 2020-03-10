@@ -399,9 +399,9 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 context.fill(barRect)
             }
         }
-        
+
         let isSingleColor = dataSet.colors.count == 1
-        
+
         if isSingleColor
         {
             context.setFillColor(dataSet.color(atIndex: 0).cgColor)
@@ -444,8 +444,14 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 {
                     break
                 }
-                
-                if !isSingleColor
+
+                let isFilledIndex = dataSet.filledIndexes.contains(index)
+
+                if isFilledIndex
+                {
+                    context.setFillColor(dataSet.highlightColor.cgColor)
+                }
+                else if !isSingleColor
                 {
                     // Set the color for the currently drawn value. If the index is out of bounds, reuse colors.
                     context.setFillColor(dataSet.color(atIndex: index).cgColor)
