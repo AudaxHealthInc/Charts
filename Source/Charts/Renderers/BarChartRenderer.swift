@@ -782,8 +782,8 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
     open override func drawHighlighted(context: CGContext, indices: [Highlight])
     {
         guard
-            let dataProvider = dataProvider,
-            let barData = dataProvider.barData
+            let chart = dataProvider as? BarChartView,
+            let barData = chart.barData
             else { return }
         
         context.saveGState()
@@ -796,50 +796,70 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 let set = barData.getDataSetByIndex(high.dataSetIndex) as? IBarChartDataSet,
                 set.isHighlightEnabled
                 else { continue }
-            
+
+            let transformer = chart.getTransformer(forAxis: set.axisDependency)
+            context.setFillColor(set.highlightColor.cgColor)
+            context.setAlpha(set.highlightAlpha)
+
             if let e = set.entryForXValue(high.x, closestToY: high.y) as? BarChartDataEntry
             {
                 if !isInBoundsX(entry: e, dataSet: set)
                 {
                     continue
                 }
-                
-                let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
-                
-                context.setFillColor(set.highlightColor.cgColor)
-                context.setAlpha(set.highlightAlpha)
-                
-                let isStack = high.stackIndex >= 0 && e.isStacked
-                
-                let y1: Double
-                let y2: Double
-                
-                if isStack
-                {
-                    if dataProvider.isHighlightFullBarEnabled
+
+                switch set.highlightStyle {
+                case .bar:
+
+                    let isStack = high.stackIndex >= 0 && e.isStacked
+
+                    let y1: Double
+                    let y2: Double
+
+                    if isStack
                     {
-                        y1 = e.positiveSum
-                        y2 = -e.negativeSum
+                        if chart.isHighlightFullBarEnabled
+                        {
+                            y1 = e.positiveSum
+                            y2 = -e.negativeSum
+                        }
+                        else
+                        {
+                            let range = e.ranges?[high.stackIndex]
+
+                            y1 = range?.from ?? 0.0
+                            y2 = range?.to ?? 0.0
+                        }
                     }
                     else
                     {
-                        let range = e.ranges?[high.stackIndex]
-                        
-                        y1 = range?.from ?? 0.0
-                        y2 = range?.to ?? 0.0
+                        y1 = e.y
+                        y2 = 0.0
                     }
-                }
-                else
-                {
-                    y1 = e.y
-                    y2 = 0.0
-                }
 
-                prepareBarHighlight(x: e.x, y1: y1, y2: y2, barWidthHalf: barData.barWidth / 2.0, trans: trans, rect: &barRect)
+                    prepareBarHighlight(x: e.x, y1: y1, y2: y2, barWidthHalf: barData.barWidth / 2.0, trans: transformer, rect: &barRect)
+
+                case .background:
+
+                    guard let xAxis = chart.xAxis as? XAxis else { return }
+
+                    let barData = chart.barData as! BarChartData
+                    let step = CGFloat(barData.dataSets.first?.entryCount ?? 0)
+
+                    var position = CGPoint(x: 0.0, y: 0.0)
+                    let valueToPixelMatrix = transformer.valueToPixelMatrix
+
+                    let width = (viewPortHandler.contentWidth / step)
+                    position.x = CGFloat(e.x) - 0.5
+                    position = position.applying(valueToPixelMatrix)
+
+                    barRect = CGRect(x: position.x, y: viewPortHandler.contentTop, width: width, height: viewPortHandler.contentBottom)
+                }
 
                 setHighlightDrawPos(highlight: high, barRect: barRect)
 
-                let path = createBarPath(for: barRect, roundedCorners: set.roundedCorners)
+                let roundedCorners = set.highlightStyle == .bar ? set.roundedCorners : []
+                let path = createBarPath(for: barRect, roundedCorners: roundedCorners)
 
                 context.saveGState()
 
@@ -932,7 +952,6 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
         let doesContainMultipleDataSets = dataSetCount > 1
 
         element.accessibilityLabel = "\(doesContainMultipleDataSets ? (dataSet.label ?? "")  + ", " : "") \(label): \(elementValueText)"
-
         if container.highlighted.map({ Int($0.x) }).contains(idx) {
             element.accessibilityTraits = [.selected]
         }

@@ -13,12 +13,19 @@ import Foundation
 import CoreGraphics
 
 @objc
+public enum HighlightStyle: Int {
+    case bar
+    case background
+}
+
+@objc
 public protocol IBarLineScatterCandleBubbleChartDataSet: IChartDataSet
 {
     // MARK: - Data functions and accessors
     
     // MARK: - Styling functions and accessors
-    
+
+    var highlightStyle: HighlightStyle { get set }
     var highlightColor: NSUIColor { get set }
     var highlightLineWidth: CGFloat { get set }
     var highlightLineDashPhase: CGFloat { get set }
